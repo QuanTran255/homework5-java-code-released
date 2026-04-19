@@ -6,6 +6,8 @@ import dsl.Query;
 import dsl.Sink;
 import utils.Or;
 import utils.Pair;
+import java.util.List;
+import java.util.ArrayList;
 
 // A streaming implementation of the theta join operator.
 //
@@ -18,9 +20,15 @@ import utils.Pair;
 public class ThetaJoin<A,B> implements Query<Or<A,B>,Pair<A,B>> {
 
 	// TODO
+	List<A> lefts;
+	List<B> rights;
+	BiPredicate<A,B> theta;
 
 	private ThetaJoin(BiPredicate<A,B> theta) {
 		// TODO
+		this.lefts = new ArrayList<>();
+		this.rights = new ArrayList<>();
+		this.theta = theta;
 	}
 
 	public static <A,B> ThetaJoin<A,B> from(BiPredicate<A,B> theta) {
@@ -29,17 +37,35 @@ public class ThetaJoin<A,B> implements Query<Or<A,B>,Pair<A,B>> {
 
 	@Override
 	public void start(Sink<Pair<A,B>> sink) {
-		// TODO
+		this.lefts.clear();
+		this.rights.clear();
 	}
 
 	@Override
 	public void next(Or<A,B> item, Sink<Pair<A,B>> sink) {
-		// TODO
+		if (item.isLeft()) {
+			A a = item.getLeft();
+			this.lefts.add(a);
+			for (B b : this.rights) {
+				if (theta.test(a, b)) {
+					sink.next(Pair.from(a, b));
+				}
+			}
+		} else {
+			B b = item.getRight();
+			this.rights.add(b);
+			for (A a : this.lefts) {
+				if (theta.test(a, b)) {
+					sink.next(Pair.from(a, b));
+				}
+			}
+		}
 	}
 
 	@Override
 	public void end(Sink<Pair<A,B>> sink) {
 		// TODO
+		sink.end();
 	}
 	
 }

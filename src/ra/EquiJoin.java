@@ -6,6 +6,10 @@ import dsl.Query;
 import dsl.Sink;
 import utils.Or;
 import utils.Pair;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 // A streaming implementation of the equi-join operator.
 //
@@ -18,9 +22,17 @@ import utils.Pair;
 public class EquiJoin<A,B,T> implements Query<Or<A,B>,Pair<A,B>> {
 
 	// TODO
+	Map<T,List<A>> lefts;
+	Map<T,List<B>> rights;
+	Function<A,T> f;
+	Function<B,T> g;
 
 	private EquiJoin(Function<A,T> f, Function<B,T> g) {
 		// TODO
+		this.lefts = new HashMap<>();
+		this.rights = new HashMap<>();
+		this.f = f;
+		this.g = g;
 	}
 
 	public static <A,B,T> EquiJoin<A,B,T> from(Function<A,T> f, Function<B,T> g) {
@@ -30,16 +42,40 @@ public class EquiJoin<A,B,T> implements Query<Or<A,B>,Pair<A,B>> {
 	@Override
 	public void start(Sink<Pair<A,B>> sink) {
 		// TODO
+		this.lefts.clear();
+		this.rights.clear();
 	}
 
 	@Override
 	public void next(Or<A,B> item, Sink<Pair<A,B>> sink) {
 		// TODO
+		if (item.isLeft()) {
+			A a = item.getLeft();
+			T key = f.apply(a);
+			this.lefts.putIfAbsent(key, new ArrayList<>());
+			this.lefts.get(key).add(a);
+			if (this.rights.containsKey(key)) {
+				for (B b : this.rights.get(key)) {
+					sink.next(Pair.from(a, b));
+				}
+			}
+		} else {
+			B b = item.getRight();
+			T key = g.apply(b);
+			this.rights.putIfAbsent(key, new ArrayList<>());
+			this.rights.get(key).add(b);
+			if (this.lefts.containsKey(key)) {
+				for (A a : this.lefts.get(key)) {
+					sink.next(Pair.from(a, b));
+				}
+			}
+		}
 	}
 
 	@Override
 	public void end(Sink<Pair<A,B>> sink) {
 		// TODO
+		sink.end();
 	}
 	
 }

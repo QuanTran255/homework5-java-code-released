@@ -4,6 +4,10 @@ import dsl.Query;
 import dsl.Sink;
 import utils.Pair;
 import utils.functions.Func2;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 // A streaming implementation of the "group by" (and aggregate) operator.
 //
@@ -20,10 +24,16 @@ import utils.functions.Func2;
 
 public class GroupBy<K,A,B> implements Query<Pair<K,A>,Pair<K,B>> {
 
-	// TODO
+	private final B init;
+	private final Func2<B,A,B> op;
+	private Map<K,B> map;
+	private List<K> order;
 
 	private GroupBy(B init, Func2<B,A,B> op) {
-		// TODO
+		this.init = init;
+		this.op = op;
+		this.map = new HashMap<>();
+		this.order = new ArrayList<>();
 	}
 
 	public static <K,A,B> GroupBy<K,A,B> from(B init, Func2<B,A,B> op) {
@@ -32,17 +42,32 @@ public class GroupBy<K,A,B> implements Query<Pair<K,A>,Pair<K,B>> {
 
 	@Override
 	public void start(Sink<Pair<K,B>> sink) {
-		// TODO
+		map.clear();
+		order.clear();
 	}
 
 	@Override
 	public void next(Pair<K,A> item, Sink<Pair<K,B>> sink) {
-		// TODO
+		K key = item.getLeft();
+		A value = item.getRight();
+		if (!map.containsKey(key)) {
+			B aggregated = op.apply(init, value);
+			map.put(key, aggregated);
+			order.add(key);
+		} else {
+			B current = map.get(key);
+			B aggregated = op.apply(current, value);
+			map.put(key, aggregated);
+		}
 	}
 
 	@Override
 	public void end(Sink<Pair<K,B>> sink) {
-		// TODO
+		for (K key : order) {
+			B value = map.get(key);
+			sink.next(Pair.from(key, value));
+		}
+		sink.end();
 	}
 	
 }
