@@ -6,6 +6,11 @@ import dsl.Query;
 
 public class PeakDetection {
 
+
+	// qLength() startup latency: smooth(5-1=4) + deriv(3-1=2) + length(41-1=40) = 46 samples
+	// Both sides of Q.parallel must have the same latency
+	private static final int LATENCY = 46;
+
 	// The curve length transformation:
 	//
 	// adjust: x[n] = raw[n] - 1024
@@ -37,16 +42,17 @@ public class PeakDetection {
 
 	public static Query<Integer,Long> qPeaks() {
 
-		// qVT: Query<Integer,VT> pairs each input value with a sample timestamp
-		Query<Integer,VT> qVT = Q.parallel(Q.id(), Q.scan(0L, (ts, a) -> ts + 1L), (v, ts) -> new VT(v, ts));
+		// Delay raw values by LATENCY samples so both sides of parallel start together
+		Query<Integer,Integer> qDelayedV = Q.sWindowNaive(LATENCY + 1, 0, (acc, a) -> a);
 
-		// qVTL: Query<Integer,VTL> pairs VT with the length transform value
-		Query<Integer,VTL> qVTL = Q.parallel(qVT, qLength(), (vt, l) -> vt.extendl(l));
+		// Pair current raw value with its length, then stamp with the correct timestamp
+		// scan uses the previous VTL's ts as the counter
+		Query<Integer,VTL> qVTL = Q.pipeline(
+			Q.parallel(qDelayedV, qLength(), (v, l) -> new VTL(v, 0L, l)),
+			Q.scan(new VTL(0, LATENCY - 1L, 0.0), (prev, vtl) -> new VTL(vtl.v, prev.ts + 1L, vtl.l))
+		);
 
-		// Create detector: default no-arg uses static THRESHOLD or can be overloaded
-		Detect detect = new Detect();
-
-		return Q.pipeline(qVTL, detect);
+		return Q.pipeline(qVTL, new Detect());
 	}
 
 	public static void main(String[] args) {
