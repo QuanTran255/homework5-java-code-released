@@ -8,9 +8,7 @@ public class TrainModel {
 
 	// The average value of the signal l[n] over the entire input.
 	public static Query<Integer,Double> qLengthAvg() {
-		// TODO
-		// Hint: Use PeakDetection.qLength()
-		return null;
+		return Q.pipeline(PeakDetection.qLength(), Q.foldAvg());
 	}
 
 	public static void main(String[] args) {

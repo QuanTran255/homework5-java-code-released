@@ -11,34 +11,44 @@ public class HeartRate {
 
 	// RR interval length (in milliseconds)
 	public static Query<Integer,Double> qIntervals() {
-		// TODO
-		return null;
+		Query<Integer,Long> peaks = PeakDetection.qPeaks();
+		Query<Long, Double> w2 = Q.sWindow2((t1, t2) -> (t2 - t1) * 1000.0 / 360.0);
+		return Q.pipeline(peaks, w2);
+
 	}
 
 	// Average heart rate (over entire signal) in bpm.
 	public static Query<Integer,Double> qHeartRateAvg() {
-		// TODO
-		return null;
+		Query<Integer,Long> peaks = PeakDetection.qPeaks();
+		Query<Long, Double> w2 = Q.sWindow2((t1, t2) -> (t2 - t1) * 1000.0 / 360.0);
+		return Q.pipeline(peaks, w2, Q.foldAvg(), Q.map(interval -> 60000.0 / interval));
 	}
 
 	// Standard deviation of NN interval length (over the entire signal)
 	// in milliseconds.
 	public static Query<Integer,Double> qSDNN() {
-		// TODO
-		return null;
+		Query<Integer,Long> peaks = PeakDetection.qPeaks();
+		Query<Long, Double> w2 = Q.sWindow2((t1, t2) -> (t2 - t1) * 1000.0 / 360.0);
+		return Q.pipeline(peaks, w2, Q.foldStdev());
 	}
 
 	// RMSSD measure (over the entire signal) in milliseconds.
 	public static Query<Integer,Double> qRMSSD() {
-		// TODO
-		return null;
+		Query<Integer,Long> peaks = PeakDetection.qPeaks();
+		Query<Long, Double> w2 = Q.sWindow2((t1, t2) -> (t2 - t1) * 1000.0 / 360.0);
+		Query<Double, Double> w2diff = Q.sWindow2((i1, i2) -> i2 - i1);
+		Query<Double, Double> sq = Q.map(x -> x * x);
+		return Q.pipeline(peaks, w2, w2diff, sq, Q.foldAvg(), Q.map(avg -> Math.sqrt(avg)));
 	}
 
 	// Proportion (in %) derived by dividing NN50 by the total number
 	// of NN intervals (calculated over the entire signal).
 	public static Query<Integer,Double> qPNN50() {
-		// TODO
-		return null;
+		Query<Integer,Long> peaks = PeakDetection.qPeaks();
+		Query<Long, Double> w2 = Q.sWindow2((t1, t2) -> (t2 - t1) * 1000.0 / 360.0);
+		Query<Double, Double> w2diff = Q.sWindow2((i1, i2) -> i2 - i1);
+		Query<Double, Double> nn50flag = Q.map(d -> Math.abs(d) > 50.0 ? 1.0 : 0.0);
+		return Q.pipeline(peaks, w2, w2diff, nn50flag, Q.foldAvg(), Q.map(p -> p * 100.0));
 	}
 
 	public static void main(String[] args) {

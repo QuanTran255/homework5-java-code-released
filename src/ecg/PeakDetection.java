@@ -17,8 +17,18 @@ public class PeakDetection {
 	public static Query<Integer,Double> qLength() {
 		// adjust >> smooth >> deriv >> length
 
-		// TODO
-		return null;
+		Query<Integer,Double> adjust = Q.map(x -> (double)(x - 1024));
+
+		Query<Double,Double> smoothSum = Q.sWindowNaive(5, 0.0, (acc, a) -> acc + a);
+		Query<Double,Double> smooth = Q.pipeline(smoothSum, Q.map(s -> s / 5.0));
+
+		Query<Double,Double> deriv = Q.sWindow3((y0, y1, y2) -> (y2 - y0) / 2.0);
+
+		Query<Double,Double> tmap = Q.map(d -> Math.sqrt(1.0 + d * d));
+
+		Query<Double,Double> length = Q.sWindowNaive(41, 0.0, (acc, a) -> acc + a);
+
+		return Q.pipeline(adjust, smooth, deriv, tmap, length);
 	}
 
 	// In order to detect peaks we need both the raw (or adjusted)
@@ -26,8 +36,17 @@ public class PeakDetection {
 	// Use the datatype VTL and implement the class Detect.
 
 	public static Query<Integer,Long> qPeaks() {
-		// TODO
-		return null;
+
+		// qVT: Query<Integer,VT> pairs each input value with a sample timestamp
+		Query<Integer,VT> qVT = Q.parallel(Q.id(), Q.scan(0L, (ts, a) -> ts + 1L), (v, ts) -> new VT(v, ts));
+
+		// qVTL: Query<Integer,VTL> pairs VT with the length transform value
+		Query<Integer,VTL> qVTL = Q.parallel(qVT, qLength(), (vt, l) -> vt.extendl(l));
+
+		// Create detector: default no-arg uses static THRESHOLD or can be overloaded
+		Detect detect = new Detect();
+
+		return Q.pipeline(qVTL, detect);
 	}
 
 	public static void main(String[] args) {
