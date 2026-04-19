@@ -29,11 +29,11 @@ public class PeakDetection {
 
 		Query<Double,Double> deriv = Q.sWindow3((y0, y1, y2) -> (y2 - y0) / 2.0);
 
-		Query<Double,Double> tmap = Q.map(d -> Math.sqrt(1.0 + d * d));
+		Query<Double,Double> dLength = Q.map(d -> Math.sqrt(1.0 + d * d));
 
 		Query<Double,Double> length = Q.sWindowNaive(41, 0.0, (acc, a) -> acc + a);
 
-		return Q.pipeline(adjust, smooth, deriv, tmap, length);
+		return Q.pipeline(adjust, smooth, deriv, dLength, length);
 	}
 
 	// In order to detect peaks we need both the raw (or adjusted)
