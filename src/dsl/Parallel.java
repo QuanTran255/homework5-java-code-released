@@ -82,6 +82,10 @@ public class Parallel<A, B, C, D> implements Query<A, D> {
 
 	@Override
 	public void start(Sink<D> sink) {
+		buffer1.clear();
+		buffer2.clear();
+		ended1 = false;
+		ended2 = false;
 		q1.start(left(sink));
 		q2.start(right(sink));
 	}
