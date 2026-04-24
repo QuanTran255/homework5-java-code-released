@@ -161,7 +161,10 @@ public class Compress {
 				}
 				int bitsDelta = 32 - Integer.numberOfLeadingZeros(maxDelta);
 				int baseByteCount = (bitsBase == 0) ? 0 : (bitsBase <= 8 ? 1 : 2);
-				int splitBytes = 1 + baseByteCount + (bitsDelta * (BLOCK_SIZE - 1) + 7) / 8;
+                boolean splitHeaderFits = bitsBase <= 15 && bitsDelta <= 7;
+                int splitBytes = splitHeaderFits
+                    ? 1 + baseByteCount + (bitsDelta * (BLOCK_SIZE - 1) + 7) / 8
+                    : Integer.MAX_VALUE;
 
 				if (unifiedBytes <= splitBytes) {
 					// Mode 0: unified — header bit 7 = 0, header = bitsAll
