@@ -21,14 +21,12 @@ import java.util.ArrayList;
 
 public class EquiJoin<A,B,T> implements Query<Or<A,B>,Pair<A,B>> {
 
-	// TODO
 	Map<T,List<A>> lefts;
 	Map<T,List<B>> rights;
 	Function<A,T> f;
 	Function<B,T> g;
 
 	private EquiJoin(Function<A,T> f, Function<B,T> g) {
-		// TODO
 		this.lefts = new HashMap<>();
 		this.rights = new HashMap<>();
 		this.f = f;
@@ -41,14 +39,12 @@ public class EquiJoin<A,B,T> implements Query<Or<A,B>,Pair<A,B>> {
 
 	@Override
 	public void start(Sink<Pair<A,B>> sink) {
-		// TODO
 		this.lefts.clear();
 		this.rights.clear();
 	}
 
 	@Override
 	public void next(Or<A,B> item, Sink<Pair<A,B>> sink) {
-		// TODO
 		if (item.isLeft()) {
 			A a = item.getLeft();
 			T key = f.apply(a);
@@ -74,7 +70,6 @@ public class EquiJoin<A,B,T> implements Query<Or<A,B>,Pair<A,B>> {
 
 	@Override
 	public void end(Sink<Pair<A,B>> sink) {
-		// TODO
 		sink.end();
 	}
 	

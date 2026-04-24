@@ -19,13 +19,11 @@ import java.util.ArrayList;
 
 public class ThetaJoin<A,B> implements Query<Or<A,B>,Pair<A,B>> {
 
-	// TODO
 	List<A> lefts;
 	List<B> rights;
 	BiPredicate<A,B> theta;
 
 	private ThetaJoin(BiPredicate<A,B> theta) {
-		// TODO
 		this.lefts = new ArrayList<>();
 		this.rights = new ArrayList<>();
 		this.theta = theta;
@@ -64,7 +62,6 @@ public class ThetaJoin<A,B> implements Query<Or<A,B>,Pair<A,B>> {
 
 	@Override
 	public void end(Sink<Pair<A,B>> sink) {
-		// TODO
 		sink.end();
 	}
 	

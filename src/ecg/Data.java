@@ -5,7 +5,6 @@ import java.util.Iterator;
 
 public class Data {
 
-	// TODO: Update the path to the datasets
 	private static final String PATH = "data/";
 
 	private Data() {
