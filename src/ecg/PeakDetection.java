@@ -7,9 +7,6 @@ import dsl.Query;
 public class PeakDetection {
 
 
-	// qLength() startup latency: smooth(5-1=4) + deriv(3-1=2) + length(41-1=40) = 46 samples
-	// Both sides of Q.parallel must have the same latency
-	private static final int LATENCY = 46;
 
 	// The curve length transformation:
 	//
@@ -41,6 +38,9 @@ public class PeakDetection {
 	// Use the datatype VTL and implement the class Detect.
 
 	public static Query<Integer,Long> qPeaks() {
+		// qLength() startup latency: smooth(5-1=4) + deriv(3-1=2) + length(41-1=40) - 1 = 45 samples
+		// Both sides of Q.parallel must have the same latency
+		int LATENCY = 45;
 
 		// Delay raw values by LATENCY samples so both sides of parallel start together
 		Query<Integer,Integer> qDelayedV = Q.sWindowNaive(LATENCY + 1, 0, (acc, a) -> a);

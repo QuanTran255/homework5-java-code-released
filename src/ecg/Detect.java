@@ -19,7 +19,7 @@ public class Detect implements Query<VTL,Long> {
 
 	// Choose this to be two times the average length
 	// over the entire signal.
-	private static final double THRESHOLD = 127.65300978749397;
+	private static final double THRESHOLD = 255.306019575;
 
 	private enum State { IDLE, SEARCH, PAUSE }
 
