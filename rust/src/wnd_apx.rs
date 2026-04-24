@@ -6,17 +6,16 @@ const CODE_MASK: u16 = 0x7f;
 
 // Layout inside ram:
 // bytes 0..875   : packed 7-bit circular buffer
-// bytes 876..877 : head
-// bytes 878..879 : filled
-// bytes 880..883 : running sum
-const BUFFER_BYTES: usize = 876;
+// bytes 875..877 : head (u16)
+// bytes 877..879 : filled (u16)
+// bytes 879..883 : running sum (u32)
+const BUFFER_BYTES: usize = 875;
 const HEAD_AT: usize = BUFFER_BYTES;
 const FILLED_AT: usize = HEAD_AT + 2;
 const SUM_AT: usize = FILLED_AT + 2;
 
-// Quantized representatives. For every input x, encode(x) chooses the
-// largest representative q <= x. These representatives were chosen so
-// that q >= 0.95 * x for every x in 0..1024.
+// 89 quantized values covering 0..1024 with q <= x <= q / 0.95.
+// Codes 0..=19 are exact; for c >= 20: DECODE[c] = DECODE[c-1] * 20 / 19 + 1.
 const DECODE: [u16; 89] = [
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
 	10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
@@ -123,27 +122,28 @@ impl WndApx {
 		self.set_u32(SUM_AT, x);
 	}
 
-	// Read/write the 7-bit code at logical buffer index `index`.
-	// The extra buffer byte lets this safely read across byte boundaries.
+	// Read the 7-bit code at logical buffer index `index`, one bit at a time.
 	fn read7(&self, index: usize) -> u8 {
-		let bit = index * CODE_BITS;
-		let byte = bit / 8;
-		let shift = bit % 8;
-		let word = u16::from(self.ram[byte])
-			| (u16::from(self.ram[byte + 1]) << 8);
-		((word >> shift) & CODE_MASK) as u8
+		let start = index * CODE_BITS;
+		let mut code = 0u8;
+		for k in 0..CODE_BITS {
+			let b = start + k;
+			let bit = (self.ram[b / 8] >> (b % 8)) & 1;
+			code |= bit << k;
+		}
+		code
 	}
 
+	// Write the 7-bit code at logical buffer index `index`, one bit at a time.
 	fn write7(&mut self, index: usize, code: u8) {
-		let bit = index * CODE_BITS;
-		let byte = bit / 8;
-		let shift = bit % 8;
-		let word = u16::from(self.ram[byte])
-			| (u16::from(self.ram[byte + 1]) << 8);
-		let mask = CODE_MASK << shift;
-		let word = (word & !mask) | (u16::from(code) << shift);
-		self.ram[byte] = word as u8;
-		self.ram[byte + 1] = (word >> 8) as u8;
+		let start = index * CODE_BITS;
+		for k in 0..CODE_BITS {
+			let b = start + k;
+			let bit = (code >> k) & 1;
+			let byte = b / 8;
+			let shift = b % 8;
+			self.ram[byte] = (self.ram[byte] & !(1 << shift)) | (bit << shift);
+		}
 	}
 
 }
